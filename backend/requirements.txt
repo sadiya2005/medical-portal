@@ -7,3 +7,5 @@ torchvision
 timm
 Pillow
 numpy
+python-dotenv
+gunicorn

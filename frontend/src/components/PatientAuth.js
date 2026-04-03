@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import API_URL from "../config";
 
 function PatientAuth({ setPatientId, onBack }) {
   const [isRegister, setIsRegister] = useState(true);
@@ -14,8 +15,8 @@ function PatientAuth({ setPatientId, onBack }) {
 
   const handleSubmit = async () => {
     const url = isRegister
-      ? "http://127.0.0.1:8000/patient/register"
-      : "http://127.0.0.1:8000/patient/login";
+      ? `${API_URL}/patient/register`
+      : `${API_URL}/patient/login`;
 
     try {
       const response = await fetch(url, {

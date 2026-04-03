@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import PatientRecords from "./PatientRecords";
+import API_URL from "../config";
 
 function XrayUpload({ patientId, onLogout }) {
   const [file, setFile] = useState(null);
@@ -34,7 +35,7 @@ function XrayUpload({ patientId, onLogout }) {
     try {
       setLoading(true);
 
-      const res = await fetch("http://127.0.0.1:8000/patient/upload", {
+      const res = await fetch(`${API_URL}/patient/upload`, {
         method: "POST",
         body: formData,
       });
@@ -108,14 +109,28 @@ function XrayUpload({ patientId, onLogout }) {
           {loading ? "Predicting..." : "Upload & Predict"}
         </button>
 
-        {result && (
+        {result && !showHistory && (
           <div style={{ marginTop: "30px" }}>
-            <h2>Prediction Result</h2>
-            <p><b>Disease:</b> {result.disease}</p>
-            <p><b>Confidence:</b> {(result.confidence * 100).toFixed(2)}%</p>
+            <h2>Diagnostic Result</h2>
+            <p><b>Finding:</b> {result.disease}</p>
+            
+            {result.is_critical && (
+              <div style={{ 
+                background: "#f8d7da", 
+                color: "#721c24", 
+                padding: "15px", 
+                margin: "20px auto", 
+                borderRadius: "8px", 
+                border: "1px solid #f5c6cb",
+                maxWidth: "400px"
+              }}>
+                <strong>🚨 CRITICAL ALERT:</strong> {result.disease} detected. 
+                A priority notification has been sent to the clinical team and your doctor's Gmail.
+              </div>
+            )}
 
             <button
-              onClick={() => setShowHistory(!showHistory)}
+              onClick={() => setShowHistory(true)}
               style={{
                 marginTop: "10px",
                 padding: "6px 12px",
@@ -123,7 +138,7 @@ function XrayUpload({ patientId, onLogout }) {
                 cursor: "pointer",
               }}
             >
-              {showHistory ? "Hide History" : "View History"}
+              View Detailed History & Heatmap
             </button>
           </div>
         )}

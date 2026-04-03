@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import API_URL from "../config";
 
 function PatientRecords({ patientId, refresh }) {
   const [records, setRecords] = useState([]);
@@ -7,7 +8,7 @@ function PatientRecords({ patientId, refresh }) {
   const fetchRecords = async () => {
     try {
       const res = await fetch(
-        `http://127.0.0.1:8000/patient/${patientId}/records`
+        `${API_URL}/patient/${patientId}/records`
       );
       const data = await res.json();
       console.log("Records:", data);
@@ -27,7 +28,7 @@ function PatientRecords({ patientId, refresh }) {
     if (!window.confirm("Are you sure you want to delete this record?")) return;
 
     try {
-      const res = await fetch(`http://127.0.0.1:8000/record/${recordId}`, {
+      const res = await fetch(`${API_URL}/record/${recordId}`, {
         method: "DELETE",
       });
 
@@ -56,14 +57,11 @@ function PatientRecords({ patientId, refresh }) {
                 <b>Disease:</b> {r.disease}
               </p>
               <p>
-                <b>Confidence:</b> {(r.confidence * 100).toFixed(2)}%
-              </p>
-              <p>
                 <b>Date:</b> {r.created_at}
               </p>
 
               <img
-                src={`http://127.0.0.1:8000/${r.image_path.replace(/\\/g, "/")}`}
+                src={`${API_URL}/${r.image_path.replace(/\\/g, "/")}`}
                 alt="X-ray"
                 className="history-image"
               />

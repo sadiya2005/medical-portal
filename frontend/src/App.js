@@ -3,23 +3,31 @@ import RoleSelect from "./components/RoleSelect";
 import PatientAuth from "./components/PatientAuth";
 import XrayUpload from "./components/XrayUpload";
 import DoctorLogin from "./components/DoctorLogin";
+import DoctorRegister from "./components/DoctorRegister";
 import DoctorDashboard from "./components/DoctorDashboard";
+import AdminLogin from "./components/AdminLogin";
+import AdminDashboard from "./components/AdminDashboard";
 import "./App.css";   // make sure this is imported
 
 function App() {
   const [role, setRole] = useState(null);
   const [patientId, setPatientId] = useState(null);
   const [doctorLoggedIn, setDoctorLoggedIn] = useState(false);
+  const [isDoctorRegistering, setIsDoctorRegistering] = useState(false);
+  const [adminLoggedIn, setAdminLoggedIn] = useState(false);
+
 
   // 🔁 Restore session
   useEffect(() => {
     const savedRole = localStorage.getItem("role");
     const savedPatientId = localStorage.getItem("patientId");
     const savedDoctor = localStorage.getItem("doctorLoggedIn");
+    const savedAdmin = localStorage.getItem("adminLoggedIn");
 
     if (savedRole) setRole(savedRole);
     if (savedRole === "patient" && savedPatientId) setPatientId(savedPatientId);
     if (savedRole === "doctor" && savedDoctor === "true") setDoctorLoggedIn(true);
+    if (savedRole === "admin" && savedAdmin === "true") setAdminLoggedIn(true);
   }, []);
 
   // 🔥 Full logout (clears everything)
@@ -28,6 +36,7 @@ function App() {
     setRole(null);
     setPatientId(null);
     setDoctorLoggedIn(false);
+    setAdminLoggedIn(false);
   };
 
   // 🔙 Go back to Role Selection only
@@ -35,10 +44,15 @@ function App() {
     localStorage.removeItem("role");
     localStorage.removeItem("patientId");
     localStorage.removeItem("doctorLoggedIn");
+    localStorage.removeItem("adminLoggedIn");
+    localStorage.removeItem("doctorName");
+    localStorage.removeItem("doctorSpecialty");
 
     setRole(null);
     setPatientId(null);
     setDoctorLoggedIn(false);
+    setAdminLoggedIn(false);
+    setIsDoctorRegistering(false);
   };
 
   let content = null;
@@ -82,18 +96,25 @@ function App() {
   }
 
   // ---------------------------
-  // Doctor Flow
+  // Doctor Flow (Privacy Hardened)
   // ---------------------------
   else if (role === "doctor" && !doctorLoggedIn) {
-    content = (
-      <DoctorLogin
-        setDoctorLoggedIn={() => {
-          localStorage.setItem("doctorLoggedIn", "true");
-          setDoctorLoggedIn(true);
-        }}
-        onBack={goBackToRole}
-      />
-    );
+    if (isDoctorRegistering) {
+      content = (
+        <DoctorRegister 
+          onBack={() => setIsDoctorRegistering(false)} 
+          onRegisterSuccess={() => setIsDoctorRegistering(false)} 
+        />
+      );
+    } else {
+      content = (
+        <DoctorLogin 
+          setDoctorLoggedIn={setDoctorLoggedIn} 
+          onBack={goBackToRole} 
+          onRegister={() => setIsDoctorRegistering(true)}
+        />
+      );
+    }
   }
 
   else if (role === "doctor" && doctorLoggedIn) {
@@ -101,16 +122,22 @@ function App() {
   }
 
   // ---------------------------
-  // Admin Placeholder
+  // Admin Flow
   // ---------------------------
-  else if (role === "admin") {
+  else if (role === "admin" && !adminLoggedIn) {
     content = (
-      <div style={{ textAlign: "center", marginTop: "50px" }}>
-        <h2>Admin Login</h2>
-        <p>Admin UI will be added later</p>
-        <button onClick={goBackToRole}>Back</button>
-      </div>
+      <AdminLogin
+        setAdminLoggedIn={() => {
+          localStorage.setItem("adminLoggedIn", "true");
+          setAdminLoggedIn(true);
+        }}
+        onBack={goBackToRole}
+      />
     );
+  }
+
+  else if (role === "admin" && adminLoggedIn) {
+    content = <AdminDashboard onLogout={handleLogout} />;
   }
 
   return (
