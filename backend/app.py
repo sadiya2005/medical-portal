@@ -7,7 +7,7 @@ from datetime import datetime
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
-from real_model import predict
+from real_model import predict, send_email_alert
 from database import engine, SessionLocal, Base
 import models
 
@@ -340,6 +340,12 @@ def upload_xray(
             f.write(file.file.read())
 
         disease, confidence, heatmap_path, is_critical = predict(file_path, patient_id)
+
+        # 🏥 Smart Alerting: Send email to the specific patient if critical
+        if is_critical:
+            patient = db.query(models.Patient).filter(models.Patient.id == patient_id).first()
+            if patient and patient.email:
+                send_email_alert(disease, patient_id, recipient_email=patient.email)
 
         new_record = models.Record(
             patient_id=patient_id,

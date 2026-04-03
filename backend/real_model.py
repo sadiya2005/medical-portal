@@ -121,14 +121,26 @@ model.eval()
 # ✅ One-time Grad-CAM setup to avoid overlapping hooks
 grad_cam_tool = GradCAM(model, target_layer=model.densenet.features.norm5)
 
-def send_email_alert(diagnosis, patient_id):
+def send_email_alert(diagnosis, patient_id, recipient_email=None):
+    """Sends a professional clinical alert via Gmail."""
+    # 🏥 Fallback to Log if no specific recipient provided
+    target_email = recipient_email or RECIPIENT_LOG
+    
+    if not SENDER_EMAIL or not SENDER_PASSWORD or not target_email:
+        print("⚠️ Email credentials missing. Skipping alert.")
+        return
+
     try:
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.text import MIMEText
+        import smtplib
+
         msg = MIMEMultipart()
         msg['From'] = SENDER_EMAIL
-        msg['To'] = RECIPIENT_LOG
-        msg['Subject'] = f"CRITICAL: X-Ray Alert for Patient {patient_id}"
+        msg['To'] = target_email
+        msg['Subject'] = f"CRITICAL: X-Ray Alert for Patient ID #{patient_id}"
 
-        body = f"URGENT: High-risk diagnostic result ({diagnosis}) for Patient: {patient_id}.\nReview diagnostic heatmap immediately."
+        body = f"URGENT CLINICAL NOTICE:\n\nA high-risk diagnostic finding ({diagnosis}) has been detected for Patient ID: {patient_id}.\n\nPlease log in to the portal to review the diagnostic heatmap and patient history immediately."
         msg.attach(MIMEText(body, 'plain'))
 
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
@@ -136,6 +148,7 @@ def send_email_alert(diagnosis, patient_id):
         server.login(SENDER_EMAIL, SENDER_PASSWORD)
         server.send_message(msg)
         server.quit()
+        print(f"📧 Alert successfully sent to: {target_email}")
     except Exception as e:
         print(f"Email Warning: {e}")
 
@@ -180,8 +193,7 @@ def predict(image_path, patient_id=0):
 
         # 3. Decision Support & Alerting
         is_critical = disease in CRITICAL_DISEASES and max_prob > 0.3
-        if is_critical:
-            send_email_alert(disease, patient_id)
+        # Note: app.py will handle calling send_email_alert with the correct recipient
 
         if max_prob < 0.2:
             return "Normal / No Finding", 0.0, image_path, False
