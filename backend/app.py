@@ -259,7 +259,7 @@ def doctor_get_patient_records(patient_id: int, db: Session = Depends(get_db)):
         "records": [
             {
                 "id": r.id,   # 🔥 Needed for delete feature
-                "image": f"http://127.0.0.1:8000/{r.image_path.replace(os.sep,'/')}",
+                "image": f"/{r.image_path.replace(os.sep,'/')}",
                 "disease": r.disease,
                 "confidence": r.confidence,
                 "date": r.created_at.strftime("%Y-%m-%d %H:%M:%S")
@@ -339,7 +339,8 @@ def upload_xray(
         with open(file_path, "wb") as f:
             f.write(file.file.read())
 
-        disease, confidence, heatmap_path, is_critical = predict(file_path, patient_id)
+        # Perform prediction with the optimized engine
+        disease, confidence, heatmap_path, is_critical = predict(file_path)
 
         # 🏥 Smart Alerting: Send email to the specific patient if critical
         if is_critical:
