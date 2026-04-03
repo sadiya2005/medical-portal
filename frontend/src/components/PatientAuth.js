@@ -32,23 +32,25 @@ function PatientAuth({ setPatientId, onBack }) {
       if (response.ok) {
         if (data.patient_code) {
           alert(
-            `${data.message}\n\nYour Patient Code: ${data.patient_code}\n\nPlease save this code carefully.\nDoctors will need it to access your records.`
+            `${data.message}\n\nYour 5-Digit Access Code: ${data.patient_code}\n\nIMPORTANT: Save this code! You need it to log in and access results.`
           );
         } else {
-          alert(data.message);
+          alert(data.message || "Operation successful!");
         }
 
+        // Store patient details
         localStorage.setItem("patientId", data.patient_id);
-        localStorage.setItem("patientCode", data.patient_code);
+        if (data.patient_code) localStorage.setItem("patientCode", data.patient_code);
         localStorage.setItem("role", "patient");
 
         setPatientId(data.patient_id);
       } else {
-        alert(data.detail || "Something went wrong");
+        // Show specific error from backend
+        alert(data.detail || data.message || "Error: " + response.statusText);
       }
     } catch (error) {
-      console.error(error);
-      alert("Server error. Please try again.");
+      console.error("Fetch Error:", error);
+      alert("Connection failed. Please check your internet or if the backend is awake.");
     }
   };
 
