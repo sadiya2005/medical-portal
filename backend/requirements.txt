@@ -9,3 +9,4 @@ Pillow
 numpy
 python-dotenv
 gunicorn
+opencv-python-headless
