@@ -2,6 +2,7 @@ from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 import re, os, random
 from datetime import datetime
 from pydantic import BaseModel
@@ -110,6 +111,11 @@ def register_patient(data: PatientRegisterRequest, db: Session = Depends(get_db)
     if not validate_password(data.password):
         raise HTTPException(status_code=400, detail="Weak password")
 
+    # 🏥 Secure Validation: Check if email already exists
+    existing_patient = db.query(models.Patient).filter(models.Patient.email == data.email.strip()).first()
+    if existing_patient:
+        raise HTTPException(status_code=400, detail="Email already registered. Please login instead.")
+
     while True:
         patient_code = str(random.randint(10000, 99999))
         if not db.query(models.Patient).filter(models.Patient.patient_code == patient_code).first():
@@ -122,9 +128,13 @@ def register_patient(data: PatientRegisterRequest, db: Session = Depends(get_db)
         patient_code=patient_code
     )
 
-    db.add(new_patient)
-    db.commit()
-    db.refresh(new_patient)
+    try:
+        db.add(new_patient)
+        db.commit()
+        db.refresh(new_patient)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Registration failed. This email or code might already be in use.")
 
     return {
         "message": "Patient registered successfully",
@@ -159,10 +169,17 @@ def login_patient(data: PatientLoginRequest, db: Session = Depends(get_db)):
 # ============================
 @app.post("/doctor/register")
 def register_doctor(data: DoctorRegisterRequest, db: Session = Depends(get_db)):
-    # Check if username exists
-    existing = db.query(models.Doctor).filter(models.Doctor.username == data.username).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Username already exists")
+    # 🏥 Smart Validation: Check email & username
+    existing_user = db.query(models.Doctor).filter(
+        (models.Doctor.username == data.username.strip()) | 
+        (models.Doctor.email == data.email.strip())
+    ).first()
+    
+    if existing_user:
+        if existing_user.username == data.username.strip():
+            raise HTTPException(status_code=400, detail="Username already exists")
+        else:
+            raise HTTPException(status_code=400, detail="Email already registered")
 
     new_doctor = models.Doctor(
         name=data.name.strip(),
@@ -171,8 +188,14 @@ def register_doctor(data: DoctorRegisterRequest, db: Session = Depends(get_db)):
         password=data.password,
         specialty=data.specialty.strip()
     )
-    db.add(new_doctor)
-    db.commit()
+    
+    try:
+        db.add(new_doctor)
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Doctor registration failed. Data conflict detected.")
+
     return {"message": "Doctor registered successfully"}
 
 
@@ -221,11 +244,17 @@ def verify_patient_code(data: DoctorVerifyRequest, db: Session = Depends(get_db)
     patient = db.query(models.Patient).filter(models.Patient.id == data.patient_id).first()
 
     if not patient:
+        print(f"❌ Error: Patient with ID {data.patient_id} not found.")
         raise HTTPException(status_code=404, detail="Patient not found")
 
-    if patient.patient_code != data.patient_code:
+    entering_code = data.patient_code.strip()
+    actual_code = patient.patient_code.strip()
+
+    if actual_code != entering_code:
+        print(f"❌ Verification Failed: Patient ID {data.patient_id}. Expected '{actual_code}', got '{entering_code}'.")
         raise HTTPException(status_code=401, detail="Invalid code. Please check and try again.")
 
+    print(f"✅ Patient Verified: {patient.name} (ID: {patient.id})")
     return {"message": "Patient verified successfully"}
 
 
@@ -237,11 +266,14 @@ class QuickVerifyRequest(BaseModel):
 
 @app.post("/doctor/verify-by-code")
 def verify_by_code(data: QuickVerifyRequest, db: Session = Depends(get_db)):
-    patient = db.query(models.Patient).filter(models.Patient.patient_code == data.patient_code).first()
+    entered_code = data.patient_code.strip()
+    patient = db.query(models.Patient).filter(models.Patient.patient_code == entered_code).first()
 
     if not patient:
+        print(f"❌ Quick Access Failed: Code '{entered_code}' not found in database.")
         raise HTTPException(status_code=404, detail="Invalid/Unknown Patient Code")
 
+    print(f"✅ Quick Access Granted: {patient.name} (Code: {entered_code})")
     return {
         "message": "Access Granted",
         "patient_id": patient.id,

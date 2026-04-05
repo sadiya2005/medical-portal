@@ -191,7 +191,7 @@ function DoctorDashboard({ onLogout }) {
                   <div key={i} className="record-card shadow-sm">
                     <p><b>Diagnostic Finding:</b> {r.disease}</p>
                     <p><b>Date:</b> {r.date}</p>
-                    <img src={r.image} alt="Grad-CAM Heatmap" style={{ width: "100%", borderRadius: "8px" }} />
+                    <img src={`${API_URL}${r.image}`} alt="Grad-CAM Heatmap" style={{ width: "100%", borderRadius: "8px" }} />
                   </div>
                 ))}
               </div>
