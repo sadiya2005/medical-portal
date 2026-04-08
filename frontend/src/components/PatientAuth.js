@@ -4,6 +4,11 @@ import Notification from "./Notification";
 
 function PatientAuth({ setPatientId, onBack }) {
   const [isRegister, setIsRegister] = useState(true);
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: ""
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [notification, setNotification] = useState({ message: "", type: "" });
 
