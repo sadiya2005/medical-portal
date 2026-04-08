@@ -8,7 +8,7 @@ from datetime import datetime
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
-from real_model import predict, send_email_alert
+from sqlalchemy import func
 from database import engine, SessionLocal, Base
 import models
 
@@ -204,9 +204,9 @@ def register_doctor(data: DoctorRegisterRequest, db: Session = Depends(get_db)):
 # ============================
 @app.post("/doctor/login")
 def doctor_login(data: DoctorLoginRequest, db: Session = Depends(get_db)):
-    # 🏥 Smart & Secure Login: Case-insensitive and space-resistant
-    from sqlalchemy import func
+    
     search_term = data.username.strip().lower()
+    
     
     doctor = db.query(models.Doctor).filter(
         (func.lower(models.Doctor.username) == search_term) | 
@@ -318,6 +318,10 @@ def admin_login(data: AdminLoginRequest):
 # ============================
 # Admin: Get All Patients (Detailed)
 # ============================
+
+# ============================
+# Admin: Get All Patients (Detailed)
+# ============================
 @app.get("/admin/patients")
 def admin_get_all_patients(db: Session = Depends(get_db)):
     patients = db.query(models.Patient).all()
@@ -332,6 +336,40 @@ def admin_get_all_patients(db: Session = Depends(get_db)):
             for p in patients
         ]
     }
+
+
+# ============================
+# Admin: Get All Doctors
+# ============================
+@app.get("/admin/doctors")
+def admin_get_all_doctors(db: Session = Depends(get_db)):
+    doctors = db.query(models.Doctor).all()
+    return {
+        "doctors": [
+            {
+                "id": d.id,
+                "name": d.name,
+                "email": d.email,
+                "username": d.username,
+                "specialty": d.specialty
+            }
+            for d in doctors
+        ]
+    }
+
+
+# ============================
+# Admin: Delete Doctor
+# ============================
+@app.delete("/admin/doctor/{doctor_id}")
+def admin_delete_doctor(doctor_id: int, db: Session = Depends(get_db)):
+    doctor = db.query(models.Doctor).filter(models.Doctor.id == doctor_id).first()
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+
+    db.delete(doctor)
+    db.commit()
+    return {"message": "Doctor deleted successfully"}
 
 
 # ============================
@@ -372,6 +410,7 @@ def upload_xray(
             f.write(file.file.read())
 
         # Perform prediction with the optimized engine
+        from real_model import predict, send_email_alert
         disease, confidence, heatmap_path, is_critical = predict(file_path)
 
         # 🏥 Smart Alerting: Send email to the specific patient if critical

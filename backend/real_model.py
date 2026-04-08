@@ -1,14 +1,5 @@
 import gc
-import torch
-import torch.nn as nn
-from torchvision import models, transforms
-from PIL import Image
-import numpy as np
-import cv2
 import os
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 import random
 
 # --- CONFIGURATION ---
@@ -29,6 +20,10 @@ def get_model():
     if _model is not None:
         return _model
 
+    import torch
+    import torch.nn as nn
+    from torchvision import models
+    
     print("--- LOADING AI MODEL ---")
     torch.set_num_threads(1)
     
@@ -59,6 +54,11 @@ def get_model():
 def predict(image_path):
     """Memory-optimized prediction."""
     try:
+        from PIL import Image
+        import numpy as np
+        import torch
+        from torchvision import transforms
+        
         model = get_model()
         
         img = Image.open(image_path).convert('RGB')
@@ -99,6 +99,9 @@ def predict(image_path):
 def generate_gradcam(image_path, target_class_idx, output_path):
     """Memory-efficient Grad-CAM for production."""
     try:
+        import cv2
+        import numpy as np
+        
         # 1. Load and prepare image
         img_bgr = cv2.imread(image_path)
         if img_bgr is None: return None
@@ -134,6 +137,10 @@ def generate_gradcam(image_path, target_class_idx, output_path):
 
 def send_email_alert(disease, patient_id, recipient_email):
     """Simple SMTP Email Sending."""
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+
     SENDER_EMAIL = os.getenv("SENDER_EMAIL")
     SENDER_PASSWORD = os.getenv("SENDER_PASSWORD")
     
