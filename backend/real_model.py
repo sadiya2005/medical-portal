@@ -76,18 +76,30 @@ def predict(image_path):
         del img_tensor
         gc.collect()
 
-        # Find best result
-        max_idx = np.argmax(probabilities)
-        disease = CLASS_NAMES[max_idx]
-        confidence = float(probabilities[max_idx])
-        
+        # --- Multi-label Detection ---
+        THRESHOLD = 0.35  # Threshold for multi-class detection
+        detected_indices = np.where(probabilities > THRESHOLD)[0]
+
+        if len(detected_indices) == 0:
+            # If nothing exceeds threshold, pick top result but tag it as low confidence if necessary
+            max_idx = np.argmax(probabilities)
+            disease = "No Findings (Normal)" if probabilities[max_idx] < 0.2 else CLASS_NAMES[max_idx]
+            confidence = float(probabilities[max_idx])
+            main_idx = max_idx
+        else:
+            # Join multiple detected diseases
+            detected_diseases = [CLASS_NAMES[i] for i in detected_indices]
+            disease = ", ".join(detected_diseases)
+            confidence = float(np.mean(probabilities[detected_indices]))
+            main_idx = detected_indices[0] # For Grad-CAM focus
+
         # Determine if critical
-        critical_diseases = ['Pneumothorax', 'Edema', 'Consolidation']
-        is_critical = disease in critical_diseases and confidence > 0.4
+        critical_diseases = ['Pneumothorax', 'Edema', 'Consolidation', 'Pneumonia']
+        is_critical = any(d in disease for d in critical_diseases) and confidence > 0.4
 
         # Generate heatmap path
         heatmap_path = image_path.replace("uploads", "uploads/heatmaps")
-        generate_gradcam(image_path, max_idx, heatmap_path)
+        generate_gradcam(image_path, main_idx, heatmap_path)
 
         return disease, confidence, heatmap_path, is_critical
     except Exception as e:

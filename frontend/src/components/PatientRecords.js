@@ -51,28 +51,40 @@ function PatientRecords({ patientId, refresh }) {
         <p>No records found</p>
       ) : (
         <div className="history-container">
-          {records.map((r) => (
+          {[...records].reverse().map((r) => (
             <div key={r.id} className="history-card">
-              <p>
-                <b>Disease:</b> {r.disease}
+              <p style={{ fontSize: "18px", color: "#1e3a8a" }}>
+                <b>Finding:</b> <span style={{ color: r.is_critical ? "#ef4444" : "#22c55e", fontWeight: "bold" }}>{r.disease}</span>
               </p>
-              <p>
-                <b>Date:</b> {r.created_at}
+              <p style={{ fontSize: "14px", color: "#64748b" }}>
+                <b>Date Analyzed:</b> {new Date(r.created_at).toLocaleString()}
               </p>
 
-              <img
-                src={`${API_URL}/${r.image_path.replace(/\\/g, "/")}`}
-                alt="X-ray"
-                className="history-image"
-              />
+              <div style={{ position: "relative", display: "inline-block", width: "100%", maxWidth: "550px", margin: "20px auto" }}>
+                <img
+                  src={`${API_URL}/${r.image_path.replace(/\\/g, "/")}`}
+                  alt="X-ray Analysis"
+                  className="history-image"
+                  style={{ width: "100%", borderRadius: "12px", boxShadow: "0 8px 16px rgba(0,0,0,0.1)" }}
+                />
+              </div>
 
-              {/* DELETE BUTTON */}
-              <button
-                onClick={() => deleteRecord(r.id)}
-                className="delete-btn"
-              >
-                Delete Record
-              </button>
+              <div style={{ marginTop: "20px" }}>
+                <button
+                  onClick={() => deleteRecord(r.id)}
+                  style={{ 
+                    padding: "8px 16px", 
+                    background: "#fee2e2", 
+                    color: "#ef4444", 
+                    border: "1px solid #fecaca", 
+                    borderRadius: "6px", 
+                    cursor: "pointer",
+                    fontWeight: "600"
+                  }}
+                >
+                  Delete This Record
+                </button>
+              </div>
             </div>
           ))}
         </div>
