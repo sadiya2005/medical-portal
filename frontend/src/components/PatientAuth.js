@@ -11,25 +11,33 @@ function PatientAuth({ setPatientId, onBack }) {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [notification, setNotification] = useState({ message: "", type: "" });
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async () => {
+    setLoading(true);
+    setNotification({ message: "", type: "" });
+
     const url = isRegister
       ? `${API_URL}/patient/register`
       : `${API_URL}/patient/login`;
 
     try {
+      // Create a timeout controller
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
       const response = await fetch(url, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(form)
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+        signal: controller.signal
       });
 
+      clearTimeout(timeoutId);
       const data = await response.json();
 
       if (response.ok) {
@@ -38,7 +46,6 @@ function PatientAuth({ setPatientId, onBack }) {
             message: `Success! Your 5-Digit Access Code: ${data.patient_code}. PLEASE SAVE THIS!`,
             type: "success"
           });
-          // Wait a bit to let them see the code before switching
           setTimeout(() => {
              localStorage.setItem("patientId", data.patient_id);
              localStorage.setItem("patientCode", data.patient_code);
@@ -56,7 +63,13 @@ function PatientAuth({ setPatientId, onBack }) {
       }
     } catch (error) {
       console.error("Fetch Error:", error);
-      setNotification({ message: "Connection failed. Is the backend running?", type: "error" });
+      if (error.name === 'AbortError') {
+        setNotification({ message: "Request timed out. Backend is still waking up...", type: "error" });
+      } else {
+        setNotification({ message: "Connection failed. Is the backend running?", type: "error" });
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -159,24 +172,25 @@ function PatientAuth({ setPatientId, onBack }) {
 
             <button 
               onClick={handleSubmit}
+              disabled={loading}
               style={{
                 width: "100%",
                 padding: "16px",
-                background: "#22c55e",
+                background: loading ? "#94a3b8" : "#22c55e",
                 color: "white",
                 border: "none",
                 borderRadius: "8px",
                 fontSize: "18px",
                 fontWeight: "700",
-                cursor: "pointer",
+                cursor: loading ? "not-allowed" : "pointer",
                 marginTop: "10px",
                 boxShadow: "0 4px 6px rgba(34, 197, 94, 0.2)",
                 transition: "background 0.2s"
               }}
-              onMouseOver={(e) => e.target.style.background = "#16a34a"}
-              onMouseOut={(e) => e.target.style.background = "#22c55e"}
+              onMouseOver={(e) => !loading && (e.target.style.background = "#16a34a")}
+              onMouseOut={(e) => !loading && (e.target.style.background = "#22c55e")}
             >
-              {isRegister ? "Register" : "Login"}
+              {loading ? "Waking up system..." : (isRegister ? "Register" : "Login")}
             </button>
 
             <p style={{ marginTop: "20px", color: "#64748b" }}>
