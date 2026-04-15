@@ -1,1 +1,1 @@
-web: sh -c "python migrate_db.py && python -m uvicorn app:app --host 0.0.0.0 --port $PORT"
+web: sh -c "export UVICORN_WEB_CONCURRENCY=1 MALLOC_TRIM_THRESHOLD_=65536 && python migrate_db.py && python -m uvicorn app:app --host 0.0.0.0 --port $PORT"

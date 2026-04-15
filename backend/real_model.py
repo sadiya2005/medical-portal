@@ -4,6 +4,9 @@ import random
 
 # --- CONFIGURATION ---
 os.environ['QT_QPA_PLATFORM'] = 'offscreen'
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "best_densenet_model.pth")
