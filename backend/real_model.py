@@ -5,7 +5,8 @@ import random
 # --- CONFIGURATION ---
 os.environ['QT_QPA_PLATFORM'] = 'offscreen'
 
-MODEL_PATH = "best_densenet_model.pth"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "best_densenet_model.pth")
 CLASS_NAMES = ["Effusion", "Infiltration", "Atelectasis", "Mass", "Pneumothorax", "Consolidation", "Cardiomegaly", "Edema"]
 
 # Global model variable for lazy loading
@@ -31,13 +32,17 @@ def get_model():
             nn.Linear(num_ftrs, 8)
         )
         
-        if os.path.exists(MODEL_PATH):
-            try:
-                checkpoint = torch.load(MODEL_PATH, map_location='cpu', weights_only=True)
-                model.load_state_dict(checkpoint)
-                del checkpoint
-            except Exception as e:
-                print(f"Model Load Warning: {e}")
+        # Absolute path check
+        if not os.path.exists(MODEL_PATH):
+            raise FileNotFoundError(f"CRITICAL ERROR: Model weights not found at {MODEL_PATH}! The AI cannot make predictions.")
+            
+        try:
+            checkpoint = torch.load(MODEL_PATH, map_location='cpu', weights_only=True)
+            model.load_state_dict(checkpoint)
+            del checkpoint
+            print("🚀 SUCCESS: AI Model successfully loaded into memory!")
+        except Exception as e:
+            raise RuntimeError(f"CRITICAL ERROR: Failed to load AI weights! {e}")
         
         model.eval()
         for param in model.parameters():
@@ -67,7 +72,7 @@ def predict(image_path):
 
         with torch.inference_mode():
             outputs = model(img_tensor)
-            probabilities = torch.sigmoid(outputs[0]).cpu().numpy()
+            probabilities = outputs[0].cpu().numpy()  # Removed sigmoid!
 
         del img_tensor
         gc.collect()
