@@ -5,11 +5,8 @@ import random
 # --- CONFIGURATION ---
 os.environ['QT_QPA_PLATFORM'] = 'offscreen'
 
-MODEL_PATH = "chexnet_model_epoch_15.pth"
-CLASS_NAMES = [
-    'Atelectasis', 'Cardiomegaly', 'Effusion', 'Infiltration', 'Mass', 'Nodule', 'Pneumonia',
-    'Pneumothorax', 'Consolidation', 'Edema', 'Emphysema', 'Fibrosis', 'Pleural_Thickening', 'Hernia'
-]
+MODEL_PATH = "best_densenet_model.pth"
+CLASS_NAMES = ["Effusion", "Infiltration", "Atelectasis", "Mass", "Pneumothorax", "Consolidation", "Cardiomegaly", "Edema"]
 
 # Global model variable for lazy loading
 _model = None
@@ -31,8 +28,7 @@ def get_model():
         model = models.densenet121(weights=None)
         num_ftrs = model.classifier.in_features
         model.classifier = nn.Sequential(
-            nn.Linear(num_ftrs, 14),
-            nn.Sigmoid()
+            nn.Linear(num_ftrs, 8)
         )
         
         if os.path.exists(MODEL_PATH):
@@ -71,7 +67,7 @@ def predict(image_path):
 
         with torch.inference_mode():
             outputs = model(img_tensor)
-            probabilities = outputs[0].cpu().numpy()
+            probabilities = torch.sigmoid(outputs[0]).cpu().numpy()
 
         del img_tensor
         gc.collect()
