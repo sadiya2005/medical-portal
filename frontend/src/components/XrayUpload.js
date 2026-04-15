@@ -49,8 +49,8 @@ function XrayUpload({ patientId, onLogout }) {
 
       setResult(data);
 
-      // 🔥 Always show and refresh history after prediction
-      setShowHistory(true);
+      // Show the big prediction result, do NOT instantly hide it
+      setShowHistory(false);
       setRefreshHistory((prev) => !prev);
 
       setFile(null);
